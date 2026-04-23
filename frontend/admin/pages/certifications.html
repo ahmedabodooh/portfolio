@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Certifications · Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/admin/assets/css/admin.css">
+</head>
+<body data-admin-page="certifications" data-title="Certifications">
+    <main id="page">
+        <div class="table-toolbar">
+            <div></div>
+            <button class="btn btn-primary" id="new-btn">+ New certification</button>
+        </div>
+        <div class="table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th style="width: 88px;">Image</th>
+                        <th>Title</th>
+                        <th>Issuer</th>
+                        <th>Year</th>
+                        <th>Sort</th>
+                        <th>Status</th>
+                        <th style="width: 140px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="/admin/assets/js/api.js"></script>
+    <script src="/admin/assets/js/ui.js"></script>
+    <script src="/admin/assets/js/shell.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!AdminAPI.token()) return;
+            document.getElementById('new-btn').addEventListener('click', () => openForm(null));
+            load();
+        });
+
+        async function load() {
+            const tbody = document.getElementById('tbody');
+            tbody.innerHTML = `<tr><td colspan="8" class="loading">Loading…</td></tr>`;
+            try { render(await AdminAPI.certifications.list()); }
+            catch (e) {
+                if (e.status === 401) return;
+                tbody.innerHTML = `<tr><td colspan="8" class="empty">Failed: ${escapeHtml(e.message)}</td></tr>`;
+            }
+        }
+
+        function render(rows) {
+            const tbody = document.getElementById('tbody');
+            if (!rows.length) { tbody.innerHTML = `<tr><td colspan="8" class="empty">No certifications.</td></tr>`; return; }
+            tbody.innerHTML = rows.map(r => `
+                <tr>
+                    <td>${r.id}</td>
+                    <td>${r.image
+                        ? `<img src="/storage/${escapeHtml(r.image)}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border, #e5e7eb);">`
+                        : '<span class="muted">—</span>'}</td>
+                    <td style="font-weight:600;">${escapeHtml(r.title)}</td>
+                    <td>${escapeHtml(r.issuer)}</td>
+                    <td>${r.year || '—'}</td>
+                    <td>${r.sort_order}</td>
+                    <td>${r.is_published ? '<span class="badge badge-success">Published</span>' : '<span class="badge">Hidden</span>'}</td>
+                    <td>
+                        <button class="btn btn-ghost btn-sm" data-edit="${r.id}">Edit</button>
+                        <button class="btn btn-danger btn-sm" data-del="${r.id}" data-name="${escapeHtml(r.title)}">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+            tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openForm(b.dataset.edit)));
+            tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+                const ok = await UI.confirm('Delete certification?', `"${b.dataset.name}" will be deleted.`);
+                if (!ok) return;
+                try { await AdminAPI.certifications.delete(b.dataset.del); UI.toast('Deleted', 'success'); load(); }
+                catch (e) { UI.toast(e.message, 'error'); }
+            }));
+        }
+
+        async function openForm(id) {
+            let existing = null;
+            if (id) { try { existing = await AdminAPI.certifications.get(id); } catch (e) { UI.toast(e.message, 'error'); return; } }
+
+            const currentImage = existing?.image ? '/storage/' + existing.image : '';
+
+            const form = document.createElement('form');
+            form.enctype = 'multipart/form-data';
+            form.innerHTML = `
+                <div class="form-row">
+                    <label>Title *</label>
+                    <input name="title" required value="${escapeHtml(existing?.title || '')}">
+                </div>
+                <div class="form-row">
+                    <label>Issuer *</label>
+                    <input name="issuer" required value="${escapeHtml(existing?.issuer || '')}">
+                </div>
+                <div class="form-row">
+                    <label>Certificate image ${id && currentImage ? '<span class="hint">(leave empty to keep current)</span>' : ''}</label>
+                    <input name="image" type="file" accept="image/*">
+                    <div class="logo-preview ${currentImage ? '' : 'empty'}" id="image-preview" style="margin-top:.6rem;">
+                        ${currentImage ? `<img src="${escapeHtml(currentImage)}" alt="">` : 'No image uploaded'}
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label>Year</label>
+                        <input name="year" type="number" min="2000" max="2100" value="${existing?.year ?? ''}">
+                    </div>
+                    <div class="form-row">
+                        <label>Credential URL</label>
+                        <input name="credential_url" type="url" value="${escapeHtml(existing?.credential_url || '')}">
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label>Sort order</label>
+                        <input name="sort_order" type="number" value="${existing?.sort_order ?? 0}">
+                    </div>
+                    <div class="form-row" style="padding-top:1.6rem;">
+                        <label class="checkbox">
+                            <input type="checkbox" name="is_published" ${existing?.is_published !== false ? 'checked' : ''}> Published
+                        </label>
+                    </div>
+                </div>
+            `;
+
+            // Live preview
+            form.querySelector('[name="image"]').addEventListener('change', (e) => {
+                const file = e.target.files?.[0];
+                const preview = form.querySelector('#image-preview');
+                if (!file) return;
+                const url = URL.createObjectURL(file);
+                preview.classList.remove('empty');
+                preview.innerHTML = `<img src="${url}" alt="">`;
+            });
+
+            const m = UI.modal({
+                title: id ? 'Edit certification' : 'New certification',
+                body: form,
+                footer: [
+                    { label: 'Cancel', variant: 'ghost', close: true },
+                    { label: id ? 'Save' : 'Create', variant: 'primary', onClick: async () => {
+                        const fd = new FormData();
+                        fd.append('title',  form.title.value.trim());
+                        fd.append('issuer', form.issuer.value.trim());
+                        if (form.credential_url.value.trim()) fd.append('credential_url', form.credential_url.value.trim());
+                        if (form.year.value !== '') fd.append('year', form.year.value);
+                        fd.append('sort_order',   form.sort_order.value || '0');
+                        fd.append('is_published', form.is_published.checked ? '1' : '0');
+                        const imageFile = form.image.files?.[0];
+                        if (imageFile) fd.append('image', imageFile);
+
+                        try {
+                            if (id) await AdminAPI.certifications.update(id, fd);
+                            else    await AdminAPI.certifications.create(fd);
+                            UI.toast(id ? 'Updated' : 'Created', 'success');
+                            load();
+                            return true;
+                        } catch (e) {
+                            if (e.validation) UI.applyValidationErrors(form, e.validation);
+                            UI.toast(e.message, 'error');
+                            return false;
+                        }
+                    } },
+                ],
+            });
+            m.open();
+        }
+    </script>
+</body>
+</html>

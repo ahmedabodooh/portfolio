@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Settings · Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/admin/assets/css/admin.css">
+    <style>
+        .file-field {
+            display: flex; gap: 1rem; align-items: flex-start;
+            padding: .75rem; border: 1px dashed var(--border-strong);
+            border-radius: var(--radius-sm); background: var(--surface-2);
+        }
+        .file-preview {
+            width: 96px; height: 96px; border-radius: var(--radius-sm);
+            background: #fff; border: 1px solid var(--border);
+            display: grid; place-items: center; overflow: hidden; flex-shrink: 0;
+            color: var(--text-mute); font-size: .7rem; text-align: center;
+        }
+        .file-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .file-preview.empty::after { content: 'No file'; }
+        .file-actions { display: flex; flex-direction: column; gap: .4rem; flex: 1; min-width: 0; }
+        .file-name { font-size: .75rem; color: var(--text-mute); word-break: break-all; }
+        .file-row-buttons { display: flex; gap: .4rem; flex-wrap: wrap; }
+    </style>
+</head>
+<body data-admin-page="settings" data-title="Site Settings">
+    <main id="page">
+        <div class="card">
+            <h3 class="card-title">Site settings</h3>
+            <p class="card-sub">These values feed the public site (hero, contact, social links, photo, résumé).</p>
+            <form id="settings-form">
+                <div id="groups"></div>
+                <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
+                    <button class="btn btn-primary" type="submit" id="save-btn">Save text fields</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="/admin/assets/js/api.js"></script>
+    <script src="/admin/assets/js/ui.js"></script>
+    <script src="/admin/assets/js/shell.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!AdminAPI.token()) return;
+            load();
+            document.getElementById('settings-form').addEventListener('submit', save);
+        });
+
+        async function load() {
+            const host = document.getElementById('groups');
+            host.innerHTML = `<div class="loading">Loading…</div>`;
+            try {
+                const groups = await AdminAPI.settings.get();
+                renderGroups(groups);
+            } catch (e) {
+                if (e.status === 401) return;
+                host.innerHTML = `<div class="empty">Failed: ${escapeHtml(e.message)}</div>`;
+            }
+        }
+
+        function renderGroups(groups) {
+            const host = document.getElementById('groups');
+            host.innerHTML = Object.entries(groups).map(([group, rows]) => `
+                <fieldset style="border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem 1.25rem; margin-bottom: 1rem;">
+                    <legend style="padding: 0 .5rem; font-weight: 600; text-transform: capitalize;">${escapeHtml(group || 'Other')}</legend>
+                    <div class="form-grid">
+                        ${rows.map(r => renderField(r)).join('')}
+                    </div>
+                </fieldset>
+            `).join('');
+
+            // Wire upload buttons
+            host.querySelectorAll('[data-upload]').forEach(input => {
+                input.addEventListener('change', (e) => handleUpload(input.dataset.upload, e.target.files[0], input));
+            });
+            host.querySelectorAll('[data-clear-file]').forEach(btn => {
+                btn.addEventListener('click', () => handleClear(btn.dataset.clearFile));
+            });
+        }
+
+        function renderField(r) {
+            const label = escapeHtml(r.key.replace(/_/g, ' '));
+            const name  = escapeHtml(r.key);
+            const val   = r.value == null ? '' : escapeHtml(r.value);
+            const isImg = r.type === 'image' || r.type === 'file';
+            const isUrl = r.type === 'url' || /_url$|^owner_(github|linkedin)$/.test(r.key);
+
+            if (isImg) {
+                const isAudioKey  = /music|audio|sound/i.test(r.key);
+                const isImageFile = r.value && /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(r.value);
+                const isPdfFile   = r.value && /\.pdf$/i.test(r.value);
+                const isAudioFile = r.value && /\.(mp3|wav|ogg|oga|m4a|weba|webm)$/i.test(r.value);
+                const accept = isAudioKey          ? 'audio/*'
+                             : r.key === 'resume_file' ? '.pdf,image/*'
+                             :                           'image/*';
+                const previewHtml = !r.value ? '' :
+                    isImageFile ? `<img src="${val}" alt="${label}">` :
+                    isPdfFile   ? `<div style="font-size:1.4rem;">📄</div><div>PDF</div>` :
+                    isAudioFile ? `<div style="font-size:1.4rem;">🎵</div><div>Audio</div>` :
+                                  `<div>📎</div>`;
+                const playerHtml = isAudioFile
+                    ? `<audio controls preload="metadata" src="${val}" style="width:100%; margin-top:.35rem;"></audio>`
+                    : '';
+
+                return `
+                    <div class="form-row" style="grid-column: 1 / -1;">
+                        <label style="text-transform: capitalize;">${label}</label>
+                        <div class="file-field">
+                            <div class="file-preview ${r.value ? '' : 'empty'}">${previewHtml}</div>
+                            <div class="file-actions">
+                                <input type="file" accept="${accept}" data-upload="${name}">
+                                <div class="file-name">${val ? 'Current: ' + val : 'No file uploaded'}</div>
+                                ${playerHtml}
+                                <div class="file-row-buttons">
+                                    ${r.value ? `<a class="btn btn-ghost btn-sm" href="${val}" target="_blank">Open</a>
+                                                  <button type="button" class="btn btn-danger btn-sm" data-clear-file="${name}">Remove</button>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const isLong = (r.value || '').length > 80;
+            const input = isLong
+                ? `<textarea name="${name}" rows="3">${val}</textarea>`
+                : `<input name="${name}" ${isUrl ? 'type="url"' : 'type="text"'} value="${val}">`;
+            return `
+                <div class="form-row">
+                    <label style="text-transform: capitalize;">${label}</label>
+                    ${input}
+                </div>
+            `;
+        }
+
+        async function handleUpload(key, file, input) {
+            if (!file) return;
+            const orig = input.value;
+            input.disabled = true;
+            try {
+                await AdminAPI.settings.upload(key, file);
+                UI.toast(`Uploaded ${key.replace(/_/g, ' ')}`, 'success');
+                load();
+            } catch (e) {
+                UI.toast(e.message || 'Upload failed', 'error');
+                input.value = orig;
+                input.disabled = false;
+            }
+        }
+
+        async function handleClear(key) {
+            const ok = await UI.confirm('Remove file?', `${key.replace(/_/g, ' ')} will be deleted from storage.`);
+            if (!ok) return;
+            try {
+                await AdminAPI.settings.clearFile(key);
+                UI.toast('File removed', 'success');
+                load();
+            } catch (e) {
+                UI.toast(e.message, 'error');
+            }
+        }
+
+        async function save(e) {
+            e.preventDefault();
+            const btn = document.getElementById('save-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Saving…';
+            try {
+                // Only collect non-file inputs
+                const data = {};
+                e.target.querySelectorAll('input:not([type=file]), textarea, select').forEach(el => {
+                    if (el.name) data[el.name] = el.value;
+                });
+                await AdminAPI.settings.update(data);
+                UI.toast('Settings saved', 'success');
+            } catch (err) {
+                UI.toast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Save text fields';
+            }
+        }
+    </script>
+</body>
+</html>

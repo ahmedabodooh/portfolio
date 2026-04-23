@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Clients · Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/admin/assets/css/admin.css">
+    <style>
+        .logo-thumb {
+            width: 56px; height: 40px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #fff;
+            border: 1px solid var(--border, #e5e7eb);
+            border-radius: 8px;
+            overflow: hidden;
+            padding: 4px;
+        }
+        .logo-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .logo-preview {
+            width: 100%; max-width: 240px; height: 80px;
+            background: #fff;
+            border: 1px dashed var(--border, #e5e7eb);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            padding: 8px;
+            margin-top: .5rem;
+        }
+        .logo-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .logo-preview.empty { color: var(--text-mute); font-size: .8rem; }
+    </style>
+</head>
+<body data-admin-page="clients" data-title="Clients">
+    <main id="page">
+        <div class="table-toolbar">
+            <div></div>
+            <button class="btn btn-primary" id="new-btn">+ New client</button>
+        </div>
+        <div class="table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">#</th>
+                        <th style="width: 90px;">Logo</th>
+                        <th>Name</th>
+                        <th>Website</th>
+                        <th>Sort</th>
+                        <th>Status</th>
+                        <th style="width: 140px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="/admin/assets/js/api.js"></script>
+    <script src="/admin/assets/js/ui.js"></script>
+    <script src="/admin/assets/js/shell.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!AdminAPI.token()) return;
+            document.getElementById('new-btn').addEventListener('click', () => openForm(null));
+            load();
+        });
+
+        async function load() {
+            const tbody = document.getElementById('tbody');
+            tbody.innerHTML = `<tr><td colspan="7" class="loading">Loading…</td></tr>`;
+            try {
+                const rows = await AdminAPI.clients.list();
+                render(rows);
+            } catch (e) {
+                if (e.status === 401) return;
+                tbody.innerHTML = `<tr><td colspan="7" class="empty">Failed: ${escapeHtml(e.message)}</td></tr>`;
+            }
+        }
+
+        function render(rows) {
+            const tbody = document.getElementById('tbody');
+            if (!rows.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty">No clients yet.</td></tr>`; return; }
+            tbody.innerHTML = rows.map(r => {
+                const logoUrl = r.logo ? '/storage/' + r.logo : '';
+                return `
+                    <tr>
+                        <td>${r.id}</td>
+                        <td><div class="logo-thumb">${logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="">` : ''}</div></td>
+                        <td style="font-weight:600;">${escapeHtml(r.name)}</td>
+                        <td>${r.website ? `<a href="${escapeHtml(r.website)}" target="_blank" rel="noopener">${escapeHtml(r.website)}</a>` : '—'}</td>
+                        <td>${r.sort_order}</td>
+                        <td>${r.is_published ? '<span class="badge badge-success">Published</span>' : '<span class="badge">Hidden</span>'}</td>
+                        <td>
+                            <button class="btn btn-ghost btn-sm" data-edit="${r.id}">Edit</button>
+                            <button class="btn btn-danger btn-sm" data-del="${r.id}" data-name="${escapeHtml(r.name)}">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openForm(b.dataset.edit)));
+            tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+                const ok = await UI.confirm('Delete client?', `"${b.dataset.name}" will be permanently deleted.`);
+                if (!ok) return;
+                try { await AdminAPI.clients.delete(b.dataset.del); UI.toast('Client deleted', 'success'); load(); }
+                catch (e) { UI.toast(e.message, 'error'); }
+            }));
+        }
+
+        async function openForm(id) {
+            let existing = null;
+            if (id) { try { existing = await AdminAPI.clients.get(id); } catch (e) { UI.toast(e.message, 'error'); return; } }
+
+            const currentLogo = existing?.logo ? '/storage/' + existing.logo : '';
+
+            const form = document.createElement('form');
+            form.enctype = 'multipart/form-data';
+            form.innerHTML = `
+                <div class="form-row">
+                    <label>Name *</label>
+                    <input name="name" required value="${escapeHtml(existing?.name || '')}">
+                </div>
+                <div class="form-row">
+                    <label>Logo ${id ? '<span class="hint">(leave empty to keep current)</span>' : '*'}</label>
+                    <input name="logo" type="file" accept="image/*" ${id ? '' : 'required'}>
+                    <div class="logo-preview ${currentLogo ? '' : 'empty'}" id="logo-preview">
+                        ${currentLogo ? `<img src="${escapeHtml(currentLogo)}" alt="">` : 'No logo uploaded'}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Website</label>
+                    <input name="website" type="url" placeholder="https://..." value="${escapeHtml(existing?.website || '')}">
+                </div>
+                <div class="form-row">
+                    <label>Sort order</label>
+                    <input name="sort_order" type="number" value="${existing?.sort_order ?? 0}">
+                </div>
+                <div class="form-row">
+                    <label class="checkbox">
+                        <input type="checkbox" name="is_published" ${existing?.is_published !== false ? 'checked' : ''}> Published
+                    </label>
+                </div>
+            `;
+
+            // Live preview of newly picked logo
+            form.querySelector('[name="logo"]').addEventListener('change', (e) => {
+                const file = e.target.files?.[0];
+                const preview = form.querySelector('#logo-preview');
+                if (!file) return;
+                const url = URL.createObjectURL(file);
+                preview.classList.remove('empty');
+                preview.innerHTML = `<img src="${url}" alt="">`;
+            });
+
+            const m = UI.modal({
+                title: id ? 'Edit client' : 'New client',
+                body: form,
+                footer: [
+                    { label: 'Cancel', variant: 'ghost', close: true },
+                    { label: id ? 'Save' : 'Create', variant: 'primary', onClick: async () => {
+                        const fd = new FormData();
+                        fd.append('name', form.name.value.trim());
+                        if (form.website.value.trim()) fd.append('website', form.website.value.trim());
+                        fd.append('sort_order', form.sort_order.value || '0');
+                        fd.append('is_published', form.is_published.checked ? '1' : '0');
+                        const logoFile = form.logo.files?.[0];
+                        if (logoFile) fd.append('logo', logoFile);
+
+                        try {
+                            if (id) await AdminAPI.clients.update(id, fd);
+                            else    await AdminAPI.clients.create(fd);
+                            UI.toast(id ? 'Client updated' : 'Client created', 'success');
+                            load();
+                            return true;
+                        } catch (e) {
+                            if (e.validation) UI.applyValidationErrors(form, e.validation);
+                            UI.toast(e.message, 'error');
+                            return false;
+                        }
+                    } },
+                ],
+            });
+            m.open();
+        }
+    </script>
+</body>
+</html>

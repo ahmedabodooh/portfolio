@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Projects · Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/admin/assets/css/admin.css">
+    <style>
+        .cover-preview {
+            width: 100%; max-width: 320px; height: 180px;
+            margin-top: .5rem;
+            border: 1px dashed var(--border, #e5e7eb);
+            border-radius: 10px;
+            background: #fff;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+        .cover-preview img {
+            width: 100%; height: 100%;
+            object-fit: cover; display: block;
+        }
+        .cover-preview.empty { color: var(--text-mute, #9ca3af); font-size: .8rem; }
+
+        .cover-thumb {
+            width: 64px; height: 40px;
+            border-radius: 6px;
+            border: 1px solid var(--border, #e5e7eb);
+            background: #f3f4f6;
+            overflow: hidden;
+        }
+        .cover-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    </style>
+</head>
+<body data-admin-page="projects" data-title="Projects">
+    <main id="page">
+        <div class="table-toolbar">
+            <div style="display:flex; gap:.5rem; align-items:center;">
+                <input type="search" id="q" placeholder="Search…" style="width: 240px;">
+                <select id="published-filter" style="width: 150px;">
+                    <option value="">All</option>
+                    <option value="1">Published</option>
+                    <option value="0">Drafts</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" id="new-btn">+ New project</button>
+        </div>
+
+        <div class="table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">#</th>
+                        <th style="width: 76px;">Cover</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Year</th>
+                        <th>Featured</th>
+                        <th>Status</th>
+                        <th style="width: 140px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+            <div class="pager" id="pager"></div>
+        </div>
+    </main>
+
+    <script src="/admin/assets/js/api.js"></script>
+    <script src="/admin/assets/js/ui.js"></script>
+    <script src="/admin/assets/js/shell.js"></script>
+    <script>
+        const state = { q: '', published: '', page: 1 };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!AdminAPI.token()) return;
+            document.getElementById('q').addEventListener('input', debounce(() => {
+                state.q = document.getElementById('q').value.trim();
+                state.page = 1; load();
+            }, 300));
+            document.getElementById('published-filter').addEventListener('change', () => {
+                state.published = document.getElementById('published-filter').value;
+                state.page = 1; load();
+            });
+            document.getElementById('new-btn').addEventListener('click', () => openForm(null));
+            load();
+        });
+
+        async function load() {
+            const tbody = document.getElementById('tbody');
+            tbody.innerHTML = `<tr><td colspan="7" class="loading">Loading…</td></tr>`;
+
+            const params = { page: state.page, per_page: 20 };
+            if (state.q)          params.q = state.q;
+            if (state.published)  params.published = state.published;
+
+            try {
+                const res = await AdminAPI.projects.list(params);
+                renderRows(res.data || []);
+                renderPager(res.meta || res);
+            } catch (e) {
+                if (e.status === 401) return;
+                tbody.innerHTML = `<tr><td colspan="7" class="empty">Failed: ${escapeHtml(e.message)}</td></tr>`;
+            }
+        }
+
+        function renderRows(rows) {
+            const tbody = document.getElementById('tbody');
+            if (!rows.length) {
+                tbody.innerHTML = `<tr><td colspan="8" class="empty">No projects yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = rows.map(p => `
+                <tr>
+                    <td>${p.id}</td>
+                    <td><div class="cover-thumb">${p.cover_image ? `<img src="${escapeHtml(p.cover_image)}" alt="">` : ''}</div></td>
+                    <td>
+                        <div style="font-weight: 600;">${escapeHtml(p.title)}</div>
+                        <div style="color: var(--text-mute); font-size: .75rem;">${escapeHtml(p.slug)}</div>
+                    </td>
+                    <td>${escapeHtml(p.category || '—')}</td>
+                    <td>${p.year || '—'}</td>
+                    <td>${p.is_featured ? '<span class="badge badge-success">Yes</span>' : '<span class="badge">No</span>'}</td>
+                    <td>${p.is_published ? '<span class="badge badge-success">Published</span>' : '<span class="badge">Draft</span>'}</td>
+                    <td>
+                        <button class="btn btn-ghost btn-sm" data-edit="${p.id}">Edit</button>
+                        <button class="btn btn-danger btn-sm" data-del="${p.id}" data-title="${escapeHtml(p.title)}">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openForm(b.dataset.edit)));
+            tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+                const ok = await UI.confirm('Delete project?', `"${b.dataset.title}" will be permanently deleted.`);
+                if (!ok) return;
+                try {
+                    await AdminAPI.projects.delete(b.dataset.del);
+                    UI.toast('Project deleted', 'success');
+                    load();
+                } catch (e) { UI.toast(e.message, 'error'); }
+            }));
+        }
+
+        function renderPager(meta) {
+            if (!meta || !meta.last_page || meta.last_page <= 1) {
+                document.getElementById('pager').innerHTML = '';
+                return;
+            }
+            const p = meta.current_page || 1;
+            const total = meta.last_page;
+            document.getElementById('pager').innerHTML = `
+                <button class="btn btn-ghost btn-sm" ${p <= 1 ? 'disabled' : ''} data-page="${p-1}">‹ Prev</button>
+                <span style="font-size:.85rem; color: var(--text-mute);">Page ${p} / ${total}</span>
+                <button class="btn btn-ghost btn-sm" ${p >= total ? 'disabled' : ''} data-page="${p+1}">Next ›</button>
+            `;
+            document.querySelectorAll('#pager [data-page]').forEach(b => b.addEventListener('click', () => {
+                state.page = parseInt(b.dataset.page, 10);
+                load();
+            }));
+        }
+
+        async function openForm(id) {
+            let existing = null;
+            if (id) {
+                try { existing = await AdminAPI.projects.get(id); existing = existing.data || existing; }
+                catch (e) { UI.toast(e.message, 'error'); return; }
+            }
+
+            // cover_image from API resource is already an absolute URL
+            const currentCover = existing?.cover_image || '';
+
+            const form = document.createElement('form');
+            form.id = 'project-form';
+            form.enctype = 'multipart/form-data';
+            form.innerHTML = `
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label>Title *</label>
+                        <input name="title" required value="${escapeHtml(existing?.title || '')}">
+                    </div>
+                    <div class="form-row">
+                        <label>Slug <span class="hint">(auto if empty)</span></label>
+                        <input name="slug" value="${escapeHtml(existing?.slug || '')}">
+                    </div>
+                    <div class="form-row">
+                        <label>Category</label>
+                        <input name="category" value="${escapeHtml(existing?.category || '')}">
+                    </div>
+                    <div class="form-row">
+                        <label>Client</label>
+                        <input name="client" value="${escapeHtml(existing?.client || '')}">
+                    </div>
+                    <div class="form-row">
+                        <label>Role</label>
+                        <input name="role" value="${escapeHtml(existing?.role || '')}">
+                    </div>
+                    <div class="form-row">
+                        <label>Year</label>
+                        <input name="year" type="number" min="2000" max="2100" value="${existing?.year ?? ''}">
+                    </div>
+                    <div class="form-row">
+                        <label>Live URL</label>
+                        <input name="live_url" type="url" value="${escapeHtml(existing?.live_url || '')}">
+                    </div>
+                    <div class="form-row">
+                        <label>Repo URL</label>
+                        <input name="repo_url" type="url" value="${escapeHtml(existing?.repo_url || '')}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Cover image <span class="hint">${id ? '(leave empty to keep current)' : '(any image format — jpg, png, webp, avif, svg…)'}</span></label>
+                    <input name="cover" type="file" accept="image/*">
+                    <div class="cover-preview ${currentCover ? '' : 'empty'}" id="cover-preview">
+                        ${currentCover ? `<img src="${escapeHtml(currentCover)}" alt="">` : 'No cover uploaded'}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Tagline</label>
+                    <input name="tagline" value="${escapeHtml(existing?.tagline || '')}">
+                </div>
+                <div class="form-row">
+                    <label>Summary</label>
+                    <textarea name="summary" rows="3">${escapeHtml(existing?.summary || '')}</textarea>
+                </div>
+                <div class="form-row">
+                    <label>Description (long)</label>
+                    <textarea name="description" rows="6">${escapeHtml(existing?.description || '')}</textarea>
+                </div>
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label>Tech stack <span class="hint">comma-separated</span></label>
+                        <input name="tech_stack_raw" value="${escapeHtml((existing?.tech_stack || []).join(', '))}">
+                    </div>
+                    <div class="form-row">
+                        <label>Highlights <span class="hint">one per line</span></label>
+                        <textarea name="highlights_raw" rows="3">${escapeHtml((existing?.highlights || []).join('\n'))}</textarea>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label>Sort order</label>
+                        <input name="sort_order" type="number" value="${existing?.sort_order ?? 0}">
+                    </div>
+                    <div class="form-row" style="flex-direction: row; gap: 1rem; align-items: center; padding-top: 1.6rem;">
+                        <label class="checkbox">
+                            <input type="checkbox" name="is_featured" ${existing?.is_featured ? 'checked' : ''}> Featured
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" name="is_published" ${existing?.is_published !== false ? 'checked' : ''}> Published
+                        </label>
+                    </div>
+                </div>
+            `;
+
+            // Live preview of newly picked cover image
+            form.querySelector('[name="cover"]').addEventListener('change', (e) => {
+                const file = e.target.files?.[0];
+                const preview = form.querySelector('#cover-preview');
+                if (!file) return;
+                const url = URL.createObjectURL(file);
+                preview.classList.remove('empty');
+                preview.innerHTML = `<img src="${url}" alt="">`;
+            });
+
+            const m = UI.modal({
+                title: id ? 'Edit project' : 'New project',
+                size: 'lg',
+                body: form,
+                footer: [
+                    { label: 'Cancel', variant: 'ghost', close: true },
+                    {
+                        label: id ? 'Save changes' : 'Create',
+                        variant: 'primary',
+                        onClick: async () => {
+                            const payload = buildPayload(form);
+                            try {
+                                if (id) await AdminAPI.projects.update(id, payload);
+                                else    await AdminAPI.projects.create(payload);
+                                UI.toast(id ? 'Project updated' : 'Project created', 'success');
+                                load();
+                                return true;
+                            } catch (e) {
+                                if (e.validation) UI.applyValidationErrors(form, e.validation);
+                                UI.toast(e.message, 'error');
+                                return false;
+                            }
+                        }
+                    },
+                ],
+            });
+            m.open();
+        }
+
+        function buildPayload(form) {
+            const fd = new FormData();
+
+            // Plain text/number fields — only append non-empty values so optional
+            // inputs don't stomp existing values with empty strings on update.
+            ['title','slug','category','client','role','tagline','summary','description','live_url','repo_url']
+                .forEach((k) => {
+                    const v = (form.elements[k]?.value ?? '').trim();
+                    if (v !== '') fd.append(k, v);
+                });
+
+            const year = (form.year.value || '').trim();
+            if (year !== '') fd.append('year', parseInt(year, 10));
+
+            const sortOrder = (form.sort_order.value || '').trim();
+            fd.append('sort_order', sortOrder === '' ? '0' : parseInt(sortOrder, 10));
+
+            // Arrays — Laravel accepts indexed array form fields (tech_stack[], highlights[])
+            (form.tech_stack_raw.value || '').split(',').map(s => s.trim()).filter(Boolean)
+                .forEach((t, i) => fd.append(`tech_stack[${i}]`, t));
+            (form.highlights_raw.value || '').split('\n').map(s => s.trim()).filter(Boolean)
+                .forEach((h, i) => fd.append(`highlights[${i}]`, h));
+
+            // Booleans — stringified so the server's request->boolean() normalises them
+            fd.append('is_featured',  form.is_featured.checked  ? '1' : '0');
+            fd.append('is_published', form.is_published.checked ? '1' : '0');
+
+            // Cover file (optional — only include if user picked a new one)
+            const coverFile = form.cover.files?.[0];
+            if (coverFile) fd.append('cover', coverFile);
+
+            return fd;
+        }
+
+        function debounce(fn, ms) {
+            let t;
+            return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+        }
+    </script>
+</body>
+</html>

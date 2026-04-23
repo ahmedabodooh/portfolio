@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#F0F9FF" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0F172A" media="(prefers-color-scheme: dark)">
+    <!-- SEO meta (title, description, keywords, canonical, OG, Twitter, JSON-LD) is injected server-side by StaticShellController + SeoService. -->
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/devicon.min.css">
+
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <script>
+        (function () {
+            try {
+                const saved = localStorage.getItem('ahmed-theme') ?? 'light';
+                document.documentElement.classList.toggle('dark', saved === 'dark');
+            } catch (e) {}
+        })();
+    </script>
+</head>
+<body data-page="home">
+
+    <div class="ambient-bg" aria-hidden="true">
+        <div class="ambient-orb one"></div>
+        <div class="ambient-orb two"></div>
+        <div class="ambient-orb three"></div>
+    </div>
+
+    <div id="boot-screen" class="boot-screen" role="status">
+        <div class="boot-content">
+            <div class="boot-hero">
+                <span class="boot-cube boot-cube--hero" aria-hidden="true">
+                    <span class="boot-cube-face">a</span>
+                </span>
+            </div>
+            <div class="boot-title-3d" aria-label="Ahmed Abo Dooh">
+                <span class="boot-word">
+                    <span class="boot-cube boot-cube--letter" style="--i:0"><span class="boot-cube-face">A</span></span>
+                    <span class="boot-cube boot-cube--letter" style="--i:1"><span class="boot-cube-face">h</span></span>
+                    <span class="boot-cube boot-cube--letter" style="--i:2"><span class="boot-cube-face">m</span></span>
+                    <span class="boot-cube boot-cube--letter" style="--i:3"><span class="boot-cube-face">e</span></span>
+                    <span class="boot-cube boot-cube--letter" style="--i:4"><span class="boot-cube-face">d</span></span>
+                </span>
+                <span class="boot-word">
+                    <span class="boot-cube boot-cube--letter" style="--i:5"><span class="boot-cube-face">A</span></span>
+                    <span class="boot-cube boot-cube--letter" style="--i:6"><span class="boot-cube-face">b</span></span>
+                    <span class="boot-cube boot-cube--letter" style="--i:7"><span class="boot-cube-face">o</span></span>
+                </span>
+                <span class="boot-word">
+                    <span class="boot-cube boot-cube--letter" style="--i:8"><span class="boot-cube-face">D</span></span>
+                    <span class="boot-cube boot-cube--letter" style="--i:9"><span class="boot-cube-face">o</span></span>
+                    <span class="boot-cube boot-cube--letter" style="--i:10"><span class="boot-cube-face">o</span></span>
+                    <span class="boot-cube boot-cube--letter" style="--i:11"><span class="boot-cube-face">h</span></span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="scroll-progress" id="scroll-progress"></div>
+
+    <!-- Top navbar (rendered by shared.js) -->
+    <div id="nav-host"></div>
+
+    <main>
+
+        <!-- HERO -->
+        <section class="relative hero-stage" style="padding: 3rem 0 3.5rem;">
+            <div class="container-wide">
+                <div class="hero-grid">
+                    <div>
+                        <div class="hero-name-3d drop-in d-0" aria-label="Ahmed Abo Dooh">
+                            <span class="hero-name-word">
+                                <span class="cube-mini" style="--i:0"><span class="cube-mini-face">A</span></span>
+                                <span class="cube-mini" style="--i:1"><span class="cube-mini-face">h</span></span>
+                                <span class="cube-mini" style="--i:2"><span class="cube-mini-face">m</span></span>
+                                <span class="cube-mini" style="--i:3"><span class="cube-mini-face">e</span></span>
+                                <span class="cube-mini" style="--i:4"><span class="cube-mini-face">d</span></span>
+                            </span>
+                            <span class="hero-name-word">
+                                <span class="cube-mini" style="--i:5"><span class="cube-mini-face">A</span></span>
+                                <span class="cube-mini" style="--i:6"><span class="cube-mini-face">b</span></span>
+                                <span class="cube-mini" style="--i:7"><span class="cube-mini-face">o</span></span>
+                            </span>
+                            <span class="hero-name-word">
+                                <span class="cube-mini" style="--i:8"><span class="cube-mini-face">D</span></span>
+                                <span class="cube-mini" style="--i:9"><span class="cube-mini-face">o</span></span>
+                                <span class="cube-mini" style="--i:10"><span class="cube-mini-face">o</span></span>
+                                <span class="cube-mini" style="--i:11"><span class="cube-mini-face">h</span></span>
+                            </span>
+                        </div>
+
+                        <p class="flex items-center gap-3 text-xs uppercase widest accent drop-in d-0" style="font-weight:600;">
+                            <span style="display:inline-block; height:2px; width:2rem; background:linear-gradient(90deg, var(--sky-500), var(--indigo-500)); border-radius:2px;"></span>
+                            <span data-identity="role">Full-Stack Developer · Laravel &amp; PHP</span>
+                        </p>
+
+                        <h1 class="hero-title" style="margin-top: 1.5rem;">
+                            <span class="drop-in d-1" style="display:block;">Building</span>
+                            <span class="drop-in d-2" style="display:block;">
+                                <span class="display-italic grad-text">digital</span> products
+                            </span>
+                            <span class="drop-in d-3" style="display:block;">
+                                that <span class="display-italic typewriter" style="color: var(--text-mute);" data-type="feel alive." data-type-speed="60"></span>
+                            </span>
+                        </h1>
+
+                        <p data-identity="tagline" class="mt-6 max-w-2xl text-lg muted leading-relaxed drop-in d-4"></p>
+
+                        <div class="mt-8 flex flex-wrap items-center gap-3 drop-in d-5">
+                            <a href="#work" class="btn-primary">
+                                See selected work
+                                <svg xmlns="http://www.w3.org/2000/svg" style="width:1rem;height:1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                            </a>
+                            <a href="#contact" class="btn-ghost">Start a conversation</a>
+                            <button type="button" class="btn-ghost" data-cv-open>
+                                <svg xmlns="http://www.w3.org/2000/svg" style="width:1rem;height:1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h5"/></svg>
+                                View résumé
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Portrait -->
+                    <div class="drop-in-right">
+                        <div class="portrait-wrap" data-portrait-tilt>
+                            <div class="portrait-glow"></div>
+
+                            <!-- Floating 3D social cubes — swap positions around portrait -->
+                            <div class="social-orbit">
+                                <a class="social-icon social-icon--linkedin" href="https://www.linkedin.com/in/ahmed-abo-dooh-2767a6299" target="_blank" rel="noopener noreferrer" aria-label="Open LinkedIn profile">
+                                    <span class="social-face">
+                                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.94 7.5A1.94 1.94 0 1 1 3.06 7.5a1.94 1.94 0 0 1 3.88 0zM7 9.5H3V20h4V9.5zM12.5 9.5h-3.8V20h3.8v-5.4c0-3.5 4.5-3.8 4.5 0V20H21v-6.7c0-5.9-6.7-5.7-8.5-2.8V9.5z"/></svg>
+                                    </span>
+                                    <span class="social-label">LinkedIn</span>
+                                </a>
+
+                                <a class="social-icon social-icon--github" href="https://github.com/ahmedabodooh" target="_blank" rel="noopener noreferrer" aria-label="Open GitHub profile">
+                                    <span class="social-face">
+                                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.67 5.56.67 11.83c0 5.01 3.25 9.26 7.76 10.76.57.1.78-.25.78-.55 0-.27-.01-1.17-.02-2.12-3.16.69-3.83-1.34-3.83-1.34-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.75 1.18 1.75 1.18 1.02 1.75 2.68 1.24 3.34.95.1-.74.4-1.25.72-1.54-2.52-.29-5.17-1.26-5.17-5.62 0-1.24.44-2.26 1.17-3.05-.12-.29-.51-1.44.11-3 0 0 .96-.31 3.15 1.17.91-.25 1.89-.38 2.86-.39.97.01 1.95.14 2.87.39 2.18-1.48 3.14-1.17 3.14-1.17.63 1.56.23 2.71.11 3 .73.79 1.17 1.81 1.17 3.05 0 4.37-2.66 5.32-5.19 5.61.41.35.77 1.04.77 2.1 0 1.52-.01 2.74-.01 3.11 0 .3.2.66.79.55 4.51-1.5 7.75-5.74 7.75-10.76C23.33 5.56 18.27.5 12 .5z"/></svg>
+                                    </span>
+                                    <span class="social-label">GitHub</span>
+                                </a>
+
+                                <a class="social-icon social-icon--whatsapp" href="https://wa.me/201126919401" target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp">
+                                    <span class="social-face">
+                                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.64-2.05-.17-.3-.02-.46.13-.61.13-.13.3-.35.44-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.21-.24-.58-.49-.5-.67-.51-.17-.01-.37-.01-.57-.01-.2 0-.52.07-.79.37-.27.3-1.04 1.01-1.04 2.47 0 1.46 1.06 2.87 1.21 3.07.15.2 2.09 3.2 5.06 4.49.71.31 1.26.49 1.69.63.71.23 1.35.19 1.86.12.57-.08 1.75-.71 2-1.4.25-.69.25-1.28.17-1.4-.07-.13-.27-.2-.57-.35zM12.05 21.8h-.04c-1.8 0-3.57-.48-5.12-1.4l-.37-.22-3.8 1 1.01-3.71-.24-.38a9.78 9.78 0 0 1-1.5-5.21c0-5.41 4.41-9.81 9.83-9.81 2.62 0 5.09 1.02 6.94 2.87a9.76 9.76 0 0 1 2.88 6.94c0 5.41-4.4 9.82-9.83 9.82zM20.52 3.45A11.76 11.76 0 0 0 12.05 0C5.5 0 .17 5.34.17 11.89c0 2.1.55 4.14 1.6 5.95L.07 24l6.31-1.66a11.85 11.85 0 0 0 5.67 1.45h.01c6.55 0 11.88-5.34 11.88-11.89 0-3.17-1.24-6.15-3.47-8.39z"/></svg>
+                                    </span>
+                                    <span class="social-label">WhatsApp</span>
+                                </a>
+
+                                <a class="social-icon social-icon--gmail" href="mailto:zalfyhima@gmail.com" aria-label="Send an email via Gmail">
+                                    <span class="social-face">
+                                        <svg viewBox="0 0 24 18" aria-hidden="true">
+                                            <path fill="#4285F4" d="M3 18h3V9L2.1 6.03A1.5 1.5 0 0 0 0 7.2v9.3A1.5 1.5 0 0 0 1.5 18H3z"/>
+                                            <path fill="#34A853" d="M18 18h4.5A1.5 1.5 0 0 0 24 16.5V7.2a1.5 1.5 0 0 0-2.1-1.17L18 9v9z"/>
+                                            <path fill="#FBBC04" d="M18 9V1.2L24 6.66V7.2a1.5 1.5 0 0 0-2.1-1.17L18 9z"/>
+                                            <path fill="#EA4335" d="M6 9V1.2l6 4.5 6-4.5V9l-6 4.5z"/>
+                                            <path fill="#C5221F" d="M0 7.2v-.9A3.6 3.6 0 0 1 6 3.6L6 9 1.6 5.67A1.5 1.5 0 0 0 0 7.2z"/>
+                                        </svg>
+                                    </span>
+                                    <span class="social-label">Gmail</span>
+                                </a>
+                            </div>
+
+                            <div class="portrait-card" id="portrait-card">
+                                <!-- Filled by main.js when owner_photo is available -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-3d reveal" data-stats-3d>
+                    <article class="stat-card" style="--stat-color: var(--theme-primary-rgb);">
+                        <span class="stat-glow" aria-hidden="true"></span>
+                        <span class="stat-sheen" aria-hidden="true"></span>
+                        <span class="stat-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/><path d="M14 4l-4 16"/></svg>
+                        </span>
+                        <div class="stat-num"><span data-count-to="3" data-count-suffix="+">0+</span></div>
+                        <div class="stat-label">Years Experience</div>
+                        <div class="stat-desc">Backend + full-stack, from internships to lead roles.</div>
+                    </article>
+
+                    <article class="stat-card" style="--stat-color: var(--theme-primary-deep-rgb);">
+                        <span class="stat-glow" aria-hidden="true"></span>
+                        <span class="stat-sheen" aria-hidden="true"></span>
+                        <span class="stat-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+                        </span>
+                        <div class="stat-num"><span data-stat="projects" data-count-to="11" data-count-suffix="+">0+</span></div>
+                        <div class="stat-label">Projects Shipped</div>
+                        <div class="stat-desc">Platforms, tools, and systems running in production.</div>
+                    </article>
+
+                    <article class="stat-card" style="--stat-color: var(--theme-primary-soft-rgb);">
+                        <span class="stat-glow" aria-hidden="true"></span>
+                        <span class="stat-sheen" aria-hidden="true"></span>
+                        <span class="stat-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                        </span>
+                        <div class="stat-num"><span data-count-to="12" data-count-suffix="+">0+</span></div>
+                        <div class="stat-label">Technologies</div>
+                        <div class="stat-desc">Laravel, PHP, MySQL, Redis, Livewire, Docker & more.</div>
+                    </article>
+
+                    <article class="stat-card" style="--stat-color: var(--theme-primary-forest-rgb);">
+                        <span class="stat-glow" aria-hidden="true"></span>
+                        <span class="stat-sheen" aria-hidden="true"></span>
+                        <span class="stat-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </span>
+                        <div class="stat-num"><span data-count-to="10" data-count-suffix="+">0+</span></div>
+                        <div class="stat-label">Clients &amp; Systems</div>
+                        <div class="stat-desc">From startups to law firms to factories.</div>
+                    </article>
+                </div>
+                <script>
+                    (function(){
+                        var cards = document.querySelectorAll('[data-stats-3d] .stat-card');
+                        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+                        cards.forEach(function(card){
+                            card.addEventListener('mousemove', function(e){
+                                var r = card.getBoundingClientRect();
+                                var px = (e.clientX - r.left) / r.width - 0.5;
+                                var py = (e.clientY - r.top) / r.height - 0.5;
+                                card.style.setProperty('--ry', (px * 10).toFixed(2) + 'deg');
+                                card.style.setProperty('--rx', (-py * 10).toFixed(2) + 'deg');
+                                card.style.setProperty('--mx', ((px + 0.5) * 100).toFixed(1) + '%');
+                                card.style.setProperty('--my', ((py + 0.5) * 100).toFixed(1) + '%');
+                            });
+                            card.addEventListener('mouseleave', function(){
+                                card.style.setProperty('--ry', '0deg');
+                                card.style.setProperty('--rx', '0deg');
+                            });
+                        });
+                    })();
+                </script>
+            </div>
+        </section>
+
+        <!-- Clients logo strip (logos uploaded from admin) -->
+        <section id="clients-strip" class="clients-section" aria-label="Trusted by" hidden>
+            <span class="clients-bg-glow" aria-hidden="true"></span>
+            <div class="container-wide">
+                <p class="clients-kicker">
+                    <span class="clients-rule"></span>
+                    <span class="clients-dot" aria-hidden="true"></span>
+                    Trusted by teams &amp; studios
+                    <span class="clients-dot" aria-hidden="true"></span>
+                    <span class="clients-rule"></span>
+                </p>
+            </div>
+            <div class="clients-rails" aria-hidden="true">
+                <div class="clients-marquee">
+                    <div class="clients-track clients-track--ltr" id="clients-track-1"></div>
+                </div>
+                <div class="clients-marquee">
+                    <div class="clients-track clients-track--rtl" id="clients-track-2"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SELECTED WORK — 3D horizontal gallery -->
+        <section id="work" class="py-24">
+            <div class="container-wide">
+                <div class="flex items-end justify-between flex-wrap gap-6 reveal" style="margin-bottom: 1rem;">
+                    <div>
+                        <p class="flex items-center gap-3 text-xs uppercase widest accent" style="font-weight:600;">
+                            <span style="display:inline-block; height:2px; width:2rem; background:linear-gradient(90deg, var(--sky-500), var(--indigo-500)); border-radius:2px;"></span>
+                            Selected work · hover to pause
+                        </p>
+                        <h2 class="mt-4 text-5xl md-text-7xl font-bold tracking-tight">
+                            Projects that <span class="display-italic grad-text">shipped.</span>
+                        </h2>
+                    </div>
+                    <a href="/projects" class="btn-ghost">
+                        View archive
+                        <svg xmlns="http://www.w3.org/2000/svg" style="width:1rem;height:1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17l10-10M7 7h10v10"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <div class="projects-rails" id="featured-projects" aria-label="Featured projects">
+                <!-- Two rails filled by main.js — top LTR, bottom RTL, auto-scrolling -->
+            </div>
+        </section>
+
+        <!-- EXPERIENCE -->
+        <section id="experience" class="py-24 exp-section">
+            <div class="exp-bg-grid" aria-hidden="true"></div>
+            <div class="exp-bg-orb exp-bg-orb-1" aria-hidden="true"></div>
+            <div class="exp-bg-orb exp-bg-orb-2" aria-hidden="true"></div>
+            <div class="container-wide relative">
+                <div class="exp-head">
+                    <div class="reveal">
+                        <p class="flex items-center gap-3 text-xs uppercase widest accent" style="font-weight:600;">
+                            <span style="display:inline-block; height:2px; width:2rem; background:var(--brand); border-radius:2px;"></span>
+                            Work history
+                        </p>
+                        <h2 class="exp-title mt-4 font-bold tracking-tight">
+                            Places I've <span class="display-italic grad-text">shipped</span> with.
+                        </h2>
+                    </div>
+                </div>
+                <div id="experience-list" class="exp-grid mt-16"></div>
+            </div>
+        </section>
+
+        <!-- STACK -->
+        <section id="stack" class="stack-section py-24">
+            <div class="stack-deco" aria-hidden="true">
+                <div class="stack-cube">
+                    <span class="stack-cube-face front">
+                        <i class="devicon-laravel-plain stack-cube-logo"></i>
+                    </span>
+                    <span class="stack-cube-face back">
+                        <i class="devicon-laravel-plain stack-cube-logo"></i>
+                    </span>
+                    <span class="stack-cube-face right"></span>
+                    <span class="stack-cube-face left"></span>
+                    <span class="stack-cube-face top"></span>
+                    <span class="stack-cube-face bottom"></span>
+                </div>
+                <div class="stack-ring"></div>
+                <div class="stack-dots"></div>
+            </div>
+            <div class="container-wide">
+                <div class="stack-head reveal">
+                    <p class="flex items-center gap-3 text-xs uppercase widest accent" style="font-weight:600;">
+                        <span style="display:inline-block; height:2px; width:2rem; background:linear-gradient(90deg, var(--sky-500), var(--indigo-500)); border-radius:2px;"></span>
+                        Toolbelt
+                    </p>
+                    <h2 class="mt-4 text-5xl md-text-6xl font-bold tracking-tight stack-title">
+                        The <span class="display-italic grad-text">stack</span> I reach for daily.
+                    </h2>
+                </div>
+                <div id="skills-list" class="skill-grid"></div>
+                <div class="reveal stack-certs cert-section">
+                    <div class="cert-head">
+                        <h3 class="cert-head-kicker"><span class="cert-head-dot"></span>Certifications</h3>
+                        <p class="cert-head-sub">Programs, bootcamps, and ambassador work.</p>
+                    </div>
+                    <div id="certs-list" class="cert-grid"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- NOTES -->
+        <section id="notes" class="py-24">
+            <div class="container-wide">
+                <div class="flex flex-col gap-6 reveal" style="margin-bottom: 2rem;">
+                    <div>
+                        <p class="flex items-center gap-3 text-xs uppercase widest accent" style="font-weight:600;">
+                            <span style="display:inline-block; height:2px; width:2rem; background:linear-gradient(90deg, var(--sky-500), var(--indigo-500)); border-radius:2px;"></span>
+                            Notes
+                        </p>
+                        <h2 class="mt-4 text-5xl md-text-6xl font-bold tracking-tight">
+                            Thoughts from <span class="display-italic grad-text">the field.</span>
+                        </h2>
+                    </div>
+                    <a href="/blog" class="btn-ghost" style="align-self:flex-start;">
+                        All notes
+                        <svg xmlns="http://www.w3.org/2000/svg" style="width:1rem;height:1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17l10-10M7 7h10v10"/></svg>
+                    </a>
+                </div>
+                <div id="notes-list" class="grid-3 stagger"></div>
+            </div>
+        </section>
+
+        <!-- CONTACT -->
+        <section id="contact" class="py-24 contact-section">
+            <span class="contact-section__dotgrid" aria-hidden="true"></span>
+            <div class="container-wide">
+                <div class="contact-grid">
+                    <!-- LEFT: info column -->
+                    <div class="contact-info reveal">
+                        <p class="flex items-center gap-3 text-xs uppercase widest accent" style="font-weight:600;">
+                            <span style="display:inline-block; height:2px; width:2rem; background:var(--brand); border-radius:2px;"></span>
+                            Get in touch
+                        </p>
+                        <h2 class="mt-4 text-5xl md-text-6xl font-bold tracking-tight">
+                            Drop a <span class="display-italic grad-text">line.</span>
+                        </h2>
+                        <p class="mt-6 muted leading-relaxed contact-info__lede">Got an idea, role, or just want to say hi? The inbox is open &mdash; I reply within a day.</p>
+
+                        <div class="contact-tiles">
+                            <a href="mailto:zalfyhima@gmail.com" class="contact-tile">
+                                <span class="contact-tile__icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+                                </span>
+                                <span class="contact-tile__body">
+                                    <span class="contact-tile__label">Email</span>
+                                    <span class="contact-tile__value" data-identity="email">zalfyhima@gmail.com</span>
+                                </span>
+                            </a>
+                            <div class="contact-tile">
+                                <span class="contact-tile__icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7.5 7-13a7 7 0 1 0-14 0c0 5.5 7 13 7 13Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                                </span>
+                                <span class="contact-tile__body">
+                                    <span class="contact-tile__label">Based in</span>
+                                    <span class="contact-tile__value" data-identity="location-2">New Cairo, Egypt</span>
+                                </span>
+                            </div>
+                            <div class="contact-tile">
+                                <span class="contact-tile__icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                                </span>
+                                <span class="contact-tile__body">
+                                    <span class="contact-tile__label">Response</span>
+                                    <span class="contact-tile__value">Within 24 hours</span>
+                                </span>
+                            </div>
+                            <div class="contact-tile contact-tile--live">
+                                <span class="contact-tile__icon contact-tile__icon--live" aria-hidden="true">
+                                    <span class="status-dot"></span>
+                                </span>
+                                <span class="contact-tile__body">
+                                    <span class="contact-tile__label">Status</span>
+                                    <span class="contact-tile__value">Open to work</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: 3D stacked form -->
+                    <div class="contact-stack reveal">
+                        <span class="contact-stack__slab" aria-hidden="true"></span>
+                        <span class="contact-stack__badge" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg>
+                        </span>
+
+                        <div class="contact-card">
+                            <div id="contact-ok" class="alert-ok" hidden>Thanks! Your message landed. I'll reply soon.</div>
+                            <div id="contact-err" class="alert-err" hidden></div>
+
+                            <form id="contact-form" class="contact-form" novalidate>
+                                <div style="position:absolute; left:-10000px; width:1px; height:1px; overflow:hidden;">
+                                    <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+                                </div>
+
+                                <div class="contact-form__row">
+                                    <div class="contact-field">
+                                        <input type="text" id="cf-name" name="name" required placeholder=" " autocomplete="name">
+                                        <label for="cf-name">Your name</label>
+                                    </div>
+                                    <div class="contact-field">
+                                        <input type="email" id="cf-email" name="email" required placeholder=" " autocomplete="email">
+                                        <label for="cf-email">Email address</label>
+                                    </div>
+                                </div>
+
+                                <div class="contact-field">
+                                    <input type="text" id="cf-subject" name="subject" placeholder=" ">
+                                    <label for="cf-subject">Subject <span class="contact-field__hint">(optional)</span></label>
+                                </div>
+
+                                <div class="contact-field contact-field--area">
+                                    <textarea id="cf-message" name="message" rows="5" required placeholder=" "></textarea>
+                                    <label for="cf-message">Tell me about it</label>
+                                </div>
+
+                                <button type="submit" class="contact-submit">
+                                    <span class="contact-submit__label">Send message</span>
+                                    <span class="contact-submit__icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+                                    </span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="footer-host"></div>
+
+    <script src="/assets/js/api.js"></script>
+    <script src="/assets/js/shared.js"></script>
+    <script src="/assets/js/main.js"></script>
+</body>
+</html>

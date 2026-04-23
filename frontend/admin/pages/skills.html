@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Skills · Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/admin/assets/css/admin.css">
+</head>
+<body data-admin-page="skills" data-title="Skills">
+    <main id="page">
+        <div class="table-toolbar">
+            <div></div>
+            <button class="btn btn-primary" id="new-btn">+ New skill</button>
+        </div>
+        <div class="table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">#</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Proficiency</th>
+                        <th>Sort</th>
+                        <th>Status</th>
+                        <th style="width: 140px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="/admin/assets/js/api.js"></script>
+    <script src="/admin/assets/js/ui.js"></script>
+    <script src="/admin/assets/js/shell.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!AdminAPI.token()) return;
+            document.getElementById('new-btn').addEventListener('click', () => openForm(null));
+            load();
+        });
+
+        async function load() {
+            const tbody = document.getElementById('tbody');
+            tbody.innerHTML = `<tr><td colspan="7" class="loading">Loading…</td></tr>`;
+            try {
+                const rows = await AdminAPI.skills.list();
+                render(rows);
+            } catch (e) {
+                if (e.status === 401) return;
+                tbody.innerHTML = `<tr><td colspan="7" class="empty">Failed: ${escapeHtml(e.message)}</td></tr>`;
+            }
+        }
+
+        function render(rows) {
+            const tbody = document.getElementById('tbody');
+            if (!rows.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty">No skills yet.</td></tr>`; return; }
+            tbody.innerHTML = rows.map(r => `
+                <tr>
+                    <td>${r.id}</td>
+                    <td style="font-weight:600;">${escapeHtml(r.name)}</td>
+                    <td>${escapeHtml(r.category)}</td>
+                    <td>${r.proficiency ?? '—'}</td>
+                    <td>${r.sort_order}</td>
+                    <td>${r.is_published ? '<span class="badge badge-success">Published</span>' : '<span class="badge">Hidden</span>'}</td>
+                    <td>
+                        <button class="btn btn-ghost btn-sm" data-edit="${r.id}">Edit</button>
+                        <button class="btn btn-danger btn-sm" data-del="${r.id}" data-name="${escapeHtml(r.name)}">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openForm(b.dataset.edit)));
+            tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+                const ok = await UI.confirm('Delete skill?', `"${b.dataset.name}" will be permanently deleted.`);
+                if (!ok) return;
+                try { await AdminAPI.skills.delete(b.dataset.del); UI.toast('Skill deleted', 'success'); load(); }
+                catch (e) { UI.toast(e.message, 'error'); }
+            }));
+        }
+
+        async function openForm(id) {
+            let existing = null;
+            if (id) { try { existing = await AdminAPI.skills.get(id); } catch (e) { UI.toast(e.message, 'error'); return; } }
+
+            const form = document.createElement('form');
+            form.innerHTML = `
+                <div class="form-row">
+                    <label>Name *</label>
+                    <input name="name" required value="${escapeHtml(existing?.name || '')}">
+                </div>
+                <div class="form-row">
+                    <label>Category *</label>
+                    <input name="category" required value="${escapeHtml(existing?.category || '')}" list="cat-suggestions">
+                    <datalist id="cat-suggestions">
+                        <option value="Languages"><option value="Backend"><option value="Frontend"><option value="Tools">
+                    </datalist>
+                </div>
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label>Proficiency <span class="hint">0–100</span></label>
+                        <input name="proficiency" type="number" min="0" max="100" value="${existing?.proficiency ?? ''}">
+                    </div>
+                    <div class="form-row">
+                        <label>Sort order</label>
+                        <input name="sort_order" type="number" value="${existing?.sort_order ?? 0}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label class="checkbox">
+                        <input type="checkbox" name="is_published" ${existing?.is_published !== false ? 'checked' : ''}> Published
+                    </label>
+                </div>
+            `;
+
+            const m = UI.modal({
+                title: id ? 'Edit skill' : 'New skill',
+                body: form,
+                footer: [
+                    { label: 'Cancel', variant: 'ghost', close: true },
+                    { label: id ? 'Save' : 'Create', variant: 'primary', onClick: async () => {
+                        const data = UI.formToObject(form);
+                        data.is_published = form.is_published.checked;
+                        if (data.proficiency === '') delete data.proficiency; else data.proficiency = parseInt(data.proficiency, 10);
+                        if (data.sort_order === '') delete data.sort_order; else data.sort_order = parseInt(data.sort_order, 10);
+                        try {
+                            if (id) await AdminAPI.skills.update(id, data);
+                            else    await AdminAPI.skills.create(data);
+                            UI.toast(id ? 'Skill updated' : 'Skill created', 'success');
+                            load();
+                            return true;
+                        } catch (e) {
+                            if (e.validation) UI.applyValidationErrors(form, e.validation);
+                            UI.toast(e.message, 'error');
+                            return false;
+                        }
+                    } },
+                ],
+            });
+            m.open();
+        }
+    </script>
+</body>
+</html>

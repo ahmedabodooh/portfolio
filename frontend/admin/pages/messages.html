@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Messages · Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/admin/assets/css/admin.css">
+</head>
+<body data-admin-page="messages" data-title="Messages">
+    <main id="page">
+        <div class="table-toolbar">
+            <div style="display:flex; gap:.5rem; align-items:center;">
+                <label class="checkbox"><input type="checkbox" id="unread-only"> Unread only</label>
+            </div>
+            <div id="count" style="font-size:.85rem; color: var(--text-mute);"></div>
+        </div>
+        <div class="table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"></th>
+                        <th>From</th>
+                        <th>Subject</th>
+                        <th>Received</th>
+                        <th style="width: 200px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+            <div class="pager" id="pager"></div>
+        </div>
+    </main>
+
+    <script src="/admin/assets/js/api.js"></script>
+    <script src="/admin/assets/js/ui.js"></script>
+    <script src="/admin/assets/js/shell.js"></script>
+    <script>
+        const state = { unread: false, page: 1 };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!AdminAPI.token()) return;
+            document.getElementById('unread-only').addEventListener('change', (e) => {
+                state.unread = e.target.checked; state.page = 1; load();
+            });
+            load();
+        });
+
+        async function load() {
+            const tbody = document.getElementById('tbody');
+            tbody.innerHTML = `<tr><td colspan="5" class="loading">Loading…</td></tr>`;
+
+            const params = { page: state.page, per_page: 20 };
+            if (state.unread) params.unread = 1;
+
+            try {
+                const res = await AdminAPI.messages.list(params);
+                render(res.data || []);
+                renderPager(res);
+                document.getElementById('count').textContent = `${res.total || 0} total`;
+            } catch (e) {
+                if (e.status === 401) return;
+                tbody.innerHTML = `<tr><td colspan="5" class="empty">Failed: ${escapeHtml(e.message)}</td></tr>`;
+            }
+        }
+
+        function render(rows) {
+            const tbody = document.getElementById('tbody');
+            if (!rows.length) { tbody.innerHTML = `<tr><td colspan="5" class="empty">Inbox is empty.</td></tr>`; return; }
+            tbody.innerHTML = rows.map(m => `
+                <tr style="${m.is_read ? '' : 'background: var(--cream-100);'}">
+                    <td>${m.is_read ? '' : '<span class="badge badge-warning">New</span>'}</td>
+                    <td>
+                        <div style="font-weight:600;">${escapeHtml(m.name)}</div>
+                        <div style="color: var(--text-mute); font-size:.75rem;">${escapeHtml(m.email)}</div>
+                    </td>
+                    <td>${escapeHtml(m.subject || '—')}</td>
+                    <td>${UI.fmtDate(m.created_at)}</td>
+                    <td>
+                        <button class="btn btn-ghost btn-sm" data-view="${m.id}">Open</button>
+                        <button class="btn btn-danger btn-sm" data-del="${m.id}">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            tbody.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => openMessage(b.dataset.view)));
+            tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+                const ok = await UI.confirm('Delete message?', 'This cannot be undone.');
+                if (!ok) return;
+                try { await AdminAPI.messages.delete(b.dataset.del); UI.toast('Deleted', 'success'); load(); }
+                catch (e) { UI.toast(e.message, 'error'); }
+            }));
+        }
+
+        function renderPager(meta) {
+            if (!meta || !meta.last_page || meta.last_page <= 1) { document.getElementById('pager').innerHTML = ''; return; }
+            const p = meta.current_page || 1, total = meta.last_page;
+            document.getElementById('pager').innerHTML = `
+                <button class="btn btn-ghost btn-sm" ${p <= 1 ? 'disabled' : ''} data-page="${p-1}">‹ Prev</button>
+                <span style="font-size:.85rem; color: var(--text-mute);">Page ${p} / ${total}</span>
+                <button class="btn btn-ghost btn-sm" ${p >= total ? 'disabled' : ''} data-page="${p+1}">Next ›</button>
+            `;
+            document.querySelectorAll('#pager [data-page]').forEach(b => b.addEventListener('click', () => { state.page = parseInt(b.dataset.page, 10); load(); }));
+        }
+
+        async function openMessage(id) {
+            let msg;
+            try { msg = await AdminAPI.messages.get(id); }
+            catch (e) { UI.toast(e.message, 'error'); return; }
+
+            const body = document.createElement('div');
+            body.innerHTML = `
+                <div style="margin-bottom: 1rem; padding-bottom:.75rem; border-bottom: 1px solid var(--border);">
+                    <div style="font-weight:600;">${escapeHtml(msg.name)} <span style="color: var(--text-mute); font-weight: 400;">&lt;${escapeHtml(msg.email)}&gt;</span></div>
+                    <div style="font-size:.75rem; color: var(--text-mute);">${UI.fmtDate(msg.created_at)} · IP ${escapeHtml(msg.ip_address || '—')}</div>
+                </div>
+                ${msg.subject ? `<div style="font-weight: 600; margin-bottom:.5rem;">${escapeHtml(msg.subject)}</div>` : ''}
+                <div style="white-space: pre-wrap; line-height: 1.5;">${escapeHtml(msg.message)}</div>
+            `;
+
+            const m = UI.modal({
+                title: 'Message',
+                body,
+                footer: [
+                    { label: 'Reply via email', variant: 'primary', onClick: () => { window.open(`mailto:${msg.email}?subject=Re: ${encodeURIComponent(msg.subject || 'Your message')}`); } },
+                    { label: 'Close', variant: 'ghost', close: true },
+                ],
+            });
+            m.open();
+            load();
+        }
+    </script>
+</body>
+</html>

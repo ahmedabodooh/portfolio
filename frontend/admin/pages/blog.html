@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Blog · Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/admin/assets/css/admin.css">
+    <style>
+        .cover-thumb {
+            width: 72px; height: 48px;
+            border-radius: 8px; overflow: hidden;
+            border: 1px solid var(--border, #e5e7eb);
+            background: #f3f4f6;
+        }
+        .cover-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .cover-preview {
+            width: 100%; max-width: 420px; aspect-ratio: 16/9;
+            background: #fafafa;
+            border: 1px dashed var(--border, #e5e7eb);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            margin-top: .6rem;
+            color: var(--text-mute, #9ca3af);
+            font-size: .8rem;
+        }
+        .cover-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .cover-preview.empty::before { content: 'No cover uploaded'; }
+    </style>
+</head>
+<body data-admin-page="blog" data-title="Blog">
+    <main id="page">
+        <div class="table-toolbar">
+            <div style="display:flex; gap:.5rem;">
+                <input type="search" id="q" placeholder="Search…" style="width: 240px;">
+                <select id="published-filter" style="width: 150px;">
+                    <option value="">All</option>
+                    <option value="1">Published</option>
+                    <option value="0">Drafts</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" id="new-btn">+ New post</button>
+        </div>
+
+        <div class="table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">#</th>
+                        <th style="width: 92px;">Cover</th>
+                        <th>Title</th>
+                        <th>Tags</th>
+                        <th>Reading</th>
+                        <th>Status</th>
+                        <th>Published at</th>
+                        <th style="width: 140px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+            <div class="pager" id="pager"></div>
+        </div>
+    </main>
+
+    <script src="/admin/assets/js/api.js"></script>
+    <script src="/admin/assets/js/ui.js"></script>
+    <script src="/admin/assets/js/shell.js"></script>
+    <script>
+        const state = { q: '', published: '', page: 1 };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!AdminAPI.token()) return;
+            document.getElementById('q').addEventListener('input', debounce(() => {
+                state.q = document.getElementById('q').value.trim(); state.page = 1; load();
+            }, 300));
+            document.getElementById('published-filter').addEventListener('change', () => {
+                state.published = document.getElementById('published-filter').value; state.page = 1; load();
+            });
+            document.getElementById('new-btn').addEventListener('click', () => openForm(null));
+            load();
+        });
+
+        async function load() {
+            const tbody = document.getElementById('tbody');
+            tbody.innerHTML = `<tr><td colspan="8" class="loading">Loading…</td></tr>`;
+            const params = { page: state.page, per_page: 20 };
+            if (state.q) params.q = state.q;
+            if (state.published) params.published = state.published;
+            try {
+                const res = await AdminAPI.blog.list(params);
+                renderRows(res.data || []);
+                renderPager(res.meta || res);
+            } catch (e) {
+                if (e.status === 401) return;
+                tbody.innerHTML = `<tr><td colspan="8" class="empty">Failed: ${escapeHtml(e.message)}</td></tr>`;
+            }
+        }
+
+        function renderRows(rows) {
+            const tbody = document.getElementById('tbody');
+            if (!rows.length) { tbody.innerHTML = `<tr><td colspan="8" class="empty">No posts yet.</td></tr>`; return; }
+            tbody.innerHTML = rows.map(p => `
+                <tr>
+                    <td>${p.id}</td>
+                    <td>
+                        <div class="cover-thumb">
+                            ${p.cover_image
+                                ? `<img src="${escapeHtml(p.cover_image)}" alt="">`
+                                : ''}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight:600;">${escapeHtml(p.title)}</div>
+                        <div style="color: var(--text-mute); font-size:.75rem;">${escapeHtml(p.slug)}</div>
+                    </td>
+                    <td><div class="chip-list">${(p.tags||[]).map(t => `<span class="chip">${escapeHtml(t)}</span>`).join('')}</div></td>
+                    <td>${p.reading_minutes || '—'} min</td>
+                    <td>${p.is_published ? '<span class="badge badge-success">Published</span>' : '<span class="badge">Draft</span>'}</td>
+                    <td>${UI.fmtDate(p.published_at)}</td>
+                    <td>
+                        <button class="btn btn-ghost btn-sm" data-edit="${p.id}">Edit</button>
+                        <button class="btn btn-danger btn-sm" data-del="${p.id}" data-title="${escapeHtml(p.title)}">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openForm(b.dataset.edit)));
+            tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+                const ok = await UI.confirm('Delete post?', `"${b.dataset.title}" will be permanently deleted.`);
+                if (!ok) return;
+                try { await AdminAPI.blog.delete(b.dataset.del); UI.toast('Post deleted', 'success'); load(); }
+                catch (e) { UI.toast(e.message, 'error'); }
+            }));
+        }
+
+        function renderPager(meta) {
+            if (!meta || !meta.last_page || meta.last_page <= 1) { document.getElementById('pager').innerHTML = ''; return; }
+            const p = meta.current_page || 1, total = meta.last_page;
+            document.getElementById('pager').innerHTML = `
+                <button class="btn btn-ghost btn-sm" ${p <= 1 ? 'disabled' : ''} data-page="${p-1}">‹ Prev</button>
+                <span style="font-size:.85rem; color: var(--text-mute);">Page ${p} / ${total}</span>
+                <button class="btn btn-ghost btn-sm" ${p >= total ? 'disabled' : ''} data-page="${p+1}">Next ›</button>
+            `;
+            document.querySelectorAll('#pager [data-page]').forEach(b => b.addEventListener('click', () => { state.page = parseInt(b.dataset.page, 10); load(); }));
+        }
+
+        async function openForm(id) {
+            let existing = null;
+            if (id) {
+                try { const r = await AdminAPI.blog.get(id); existing = r.data || r; }
+                catch (e) { UI.toast(e.message, 'error'); return; }
+            }
+            const bodyMd = existing?.body_markdown || existing?.body || '';
+            const currentCover = existing?.cover_image || '';
+
+            const form = document.createElement('form');
+            form.enctype = 'multipart/form-data';
+            form.innerHTML = `
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label>Title *</label>
+                        <input name="title" required value="${escapeHtml(existing?.title || '')}">
+                    </div>
+                    <div class="form-row">
+                        <label>Slug <span class="hint">(auto)</span></label>
+                        <input name="slug" value="${escapeHtml(existing?.slug || '')}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Cover image ${id && currentCover ? '<span class="hint">(leave empty to keep current)</span>' : '<span class="hint">(recommended 1600×900)</span>'}</label>
+                    <input name="cover" type="file" accept="image/*">
+                    <div class="cover-preview ${currentCover ? '' : 'empty'}" id="cover-preview">
+                        ${currentCover ? `<img src="${escapeHtml(currentCover)}" alt="">` : ''}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Excerpt</label>
+                    <textarea name="excerpt" rows="2">${escapeHtml(existing?.excerpt || '')}</textarea>
+                </div>
+                <div class="form-row">
+                    <label>Body (Markdown) *</label>
+                    <textarea name="body" rows="14" required style="font-family: 'JetBrains Mono', monospace; font-size: .8rem;">${escapeHtml(bodyMd)}</textarea>
+                </div>
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label>Tags <span class="hint">comma-separated</span></label>
+                        <input name="tags_raw" value="${escapeHtml((existing?.tags || []).join(', '))}">
+                    </div>
+                    <div class="form-row">
+                        <label>Reading minutes</label>
+                        <input name="reading_minutes" type="number" min="1" value="${existing?.reading_minutes ?? ''}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label class="checkbox">
+                        <input type="checkbox" name="is_published" ${existing?.is_published ? 'checked' : ''}> Published
+                    </label>
+                </div>
+            `;
+
+            // Live cover preview
+            form.querySelector('[name="cover"]').addEventListener('change', (e) => {
+                const file = e.target.files?.[0];
+                const preview = form.querySelector('#cover-preview');
+                if (!file) return;
+                const url = URL.createObjectURL(file);
+                preview.classList.remove('empty');
+                preview.innerHTML = `<img src="${url}" alt="">`;
+            });
+
+            const m = UI.modal({
+                title: id ? 'Edit post' : 'New post',
+                size: 'lg',
+                body: form,
+                footer: [
+                    { label: 'Cancel', variant: 'ghost', close: true },
+                    {
+                        label: id ? 'Save' : 'Create',
+                        variant: 'primary',
+                        onClick: async () => {
+                            const fd = new FormData();
+                            fd.append('title', form.title.value.trim());
+                            if (form.slug.value.trim()) fd.append('slug', form.slug.value.trim());
+                            if (form.excerpt.value.trim()) fd.append('excerpt', form.excerpt.value.trim());
+                            fd.append('body', form.body.value);
+                            const tags = (form.tags_raw.value || '')
+                                .split(',').map(s => s.trim()).filter(Boolean);
+                            tags.forEach(t => fd.append('tags[]', t));
+                            if (form.reading_minutes.value !== '') fd.append('reading_minutes', form.reading_minutes.value);
+                            fd.append('is_published', form.is_published.checked ? '1' : '0');
+                            const coverFile = form.cover.files?.[0];
+                            if (coverFile) fd.append('cover', coverFile);
+
+                            try {
+                                if (id) await AdminAPI.blog.update(id, fd);
+                                else    await AdminAPI.blog.create(fd);
+                                UI.toast(id ? 'Post updated' : 'Post created', 'success');
+                                load();
+                                return true;
+                            } catch (e) {
+                                if (e.validation) UI.applyValidationErrors(form, e.validation);
+                                UI.toast(e.message, 'error');
+                                return false;
+                            }
+                        }
+                    },
+                ],
+            });
+            m.open();
+        }
+
+        function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+    </script>
+</body>
+</html>

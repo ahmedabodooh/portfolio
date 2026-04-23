@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Post · Ahmed Abo Dooh</title>
+    <meta name="theme-color" content="#06070E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <script>(function(){try{const s=localStorage.getItem('ahmed-theme')??'light';document.documentElement.classList.toggle('dark',s==='dark');}catch(e){}})();</script>
+</head>
+<body data-page="post">
+    <div class="ambient-bg" aria-hidden="true">
+        <div class="ambient-orb one"></div><div class="ambient-orb two"></div><div class="ambient-orb three"></div>
+    </div>
+
+    <div id="boot-screen" class="boot-screen" role="status">
+        <div class="boot-content">
+            <div class="boot-logo">a</div>
+            <div class="boot-title">Loading post</div>
+            <div class="boot-skeleton"><div class="boot-skel-card"></div><div class="boot-skel-card"></div><div class="boot-skel-card"></div><div class="boot-skel-card"></div></div>
+        </div>
+    </div>
+
+    <div class="scroll-progress" id="scroll-progress"></div>
+    <div id="nav-host"></div>
+
+    <main>
+        <article>
+            <section class="container-narrow pt-16 pb-8">
+                <a href="/blog" class="flex items-center gap-2 text-sm muted link-underline" style="display:inline-flex;">
+                    <svg xmlns="http://www.w3.org/2000/svg" style="width:1rem;height:1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7L7 17M17 17H7V7"/></svg>
+                    All notes
+                </a>
+
+                <div class="mt-8 flex flex-wrap items-center gap-3 text-xs uppercase widest muted-2 reveal">
+                    <time data-field="date"></time><span data-field="read"></span>
+                </div>
+
+                <h1 data-field="title" class="reveal" style="margin-top: 1rem; font-size: 6vw; font-weight: 600; letter-spacing: -0.04em; line-height: .95;"></h1>
+                <p data-field="excerpt" class="mt-6 display-italic text-2xl md-text-3xl muted reveal"></p>
+                <div id="post-tags" class="mt-8 flex flex-wrap gap-2 reveal" hidden></div>
+            </section>
+
+            <section id="post-cover" class="container-narrow pb-12 reveal" hidden></section>
+
+            <section class="container-narrow pb-16">
+                <div id="post-body" class="prose-article reveal"></div>
+            </section>
+
+            <section id="more-posts-wrap" class="container-wide pb-24" hidden>
+                <div style="padding-top: 3rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                    <h3 class="text-xs uppercase widest muted-2">Continue reading</h3>
+                    <div id="more-posts" class="grid-3 mt-8"></div>
+                </div>
+            </section>
+        </article>
+    </main>
+
+    <div id="footer-host"></div>
+
+    <script src="/assets/js/api.js"></script>
+    <script src="/assets/js/shared.js"></script>
+    <script src="/assets/js/main.js"></script>
+</body>
+</html>

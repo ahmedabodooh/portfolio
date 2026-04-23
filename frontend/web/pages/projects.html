@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Archive · Projects · Ahmed Abo Dooh</title>
+    <meta name="description" content="Every project shipped — Laravel APIs, full-stack platforms, production-tuned systems.">
+    <meta name="theme-color" content="#06070E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <script>(function(){try{const s=localStorage.getItem('ahmed-theme')??'light';document.documentElement.classList.toggle('dark',s==='dark');}catch(e){}})();</script>
+</head>
+<body data-page="projects">
+    <div class="ambient-bg" aria-hidden="true">
+        <div class="ambient-orb one"></div><div class="ambient-orb two"></div><div class="ambient-orb three"></div>
+    </div>
+
+    <div id="boot-screen" class="boot-screen" role="status">
+        <div class="boot-content">
+            <div class="boot-logo">a</div>
+            <div class="boot-title">Archive</div>
+            <div class="boot-subtitle">fetching projects</div>
+            <div class="boot-skeleton"><div class="boot-skel-card"></div><div class="boot-skel-card"></div><div class="boot-skel-card"></div><div class="boot-skel-card"></div></div>
+        </div>
+    </div>
+
+    <div class="scroll-progress" id="scroll-progress"></div>
+    <div id="nav-host"></div>
+
+    <main>
+        <section class="container-wide pt-20 pb-12">
+            <p class="flex items-center gap-3 text-xs uppercase widest accent reveal">
+                <span style="display:inline-block; height:2px; width:2rem; background:var(--brand); border-radius:2px;"></span>
+                Archive
+            </p>
+            <h1 style="margin-top: 1.5rem; font-size: 6vw; font-weight: 800; letter-spacing: -0.04em; line-height: .95;" class="reveal">
+                Every<br><span class="display-italic grad-text">project</span> built.
+            </h1>
+            <p class="mt-6 max-w-2xl text-lg muted leading-relaxed reveal">A chronological list of systems I've designed, shipped, and optimized — hydrated live from the portfolio API.</p>
+        </section>
+
+        <section class="container-wide pb-32">
+            <div id="archive-skeleton" class="skeleton-grid">
+                <div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div>
+            </div>
+            <div id="archive-grid" class="skeleton-grid stagger"></div>
+        </section>
+    </main>
+
+    <div id="footer-host"></div>
+
+    <script src="/assets/js/api.js"></script>
+    <script src="/assets/js/shared.js"></script>
+    <script src="/assets/js/main.js"></script>
+</body>
+</html>

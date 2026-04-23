@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Experiences · Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/admin/assets/css/admin.css">
+</head>
+<body data-admin-page="experiences" data-title="Experiences">
+    <main id="page">
+        <div class="table-toolbar">
+            <div></div>
+            <button class="btn btn-primary" id="new-btn">+ New experience</button>
+        </div>
+        <div class="table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Company</th>
+                        <th>Role</th>
+                        <th>Period</th>
+                        <th>Sort</th>
+                        <th>Status</th>
+                        <th style="width: 140px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="/admin/assets/js/api.js"></script>
+    <script src="/admin/assets/js/ui.js"></script>
+    <script src="/admin/assets/js/shell.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!AdminAPI.token()) return;
+            document.getElementById('new-btn').addEventListener('click', () => openForm(null));
+            load();
+        });
+
+        async function load() {
+            const tbody = document.getElementById('tbody');
+            tbody.innerHTML = `<tr><td colspan="7" class="loading">Loading…</td></tr>`;
+            try { render(await AdminAPI.experiences.list()); }
+            catch (e) {
+                if (e.status === 401) return;
+                tbody.innerHTML = `<tr><td colspan="7" class="empty">Failed: ${escapeHtml(e.message)}</td></tr>`;
+            }
+        }
+
+        function render(rows) {
+            const tbody = document.getElementById('tbody');
+            if (!rows.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty">No experiences.</td></tr>`; return; }
+            tbody.innerHTML = rows.map(r => `
+                <tr>
+                    <td>${r.id}</td>
+                    <td style="font-weight:600;">${escapeHtml(r.company)}</td>
+                    <td>${escapeHtml(r.role)}</td>
+                    <td>${escapeHtml(r.period || '—')}</td>
+                    <td>${r.sort_order}</td>
+                    <td>${r.is_published ? '<span class="badge badge-success">Published</span>' : '<span class="badge">Hidden</span>'}</td>
+                    <td>
+                        <button class="btn btn-ghost btn-sm" data-edit="${r.id}">Edit</button>
+                        <button class="btn btn-danger btn-sm" data-del="${r.id}" data-name="${escapeHtml(r.company)}">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+            tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openForm(b.dataset.edit)));
+            tbody.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+                const ok = await UI.confirm('Delete experience?', `"${b.dataset.name}" will be deleted.`);
+                if (!ok) return;
+                try { await AdminAPI.experiences.delete(b.dataset.del); UI.toast('Deleted', 'success'); load(); }
+                catch (e) { UI.toast(e.message, 'error'); }
+            }));
+        }
+
+        async function openForm(id) {
+            let existing = null;
+            if (id) { try { existing = await AdminAPI.experiences.get(id); } catch (e) { UI.toast(e.message, 'error'); return; } }
+
+            const form = document.createElement('form');
+            form.innerHTML = `
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label>Company *</label>
+                        <input name="company" required value="${escapeHtml(existing?.company || '')}">
+                    </div>
+                    <div class="form-row">
+                        <label>Role *</label>
+                        <input name="role" required value="${escapeHtml(existing?.role || '')}">
+                    </div>
+                    <div class="form-row">
+                        <label>Location</label>
+                        <input name="location" value="${escapeHtml(existing?.location || '')}">
+                    </div>
+                    <div class="form-row">
+                        <label>Period (display text)</label>
+                        <input name="period" value="${escapeHtml(existing?.period || '')}" placeholder="e.g. Jun 2025 — Present">
+                    </div>
+                    <div class="form-row">
+                        <label>Started at</label>
+                        <input name="started_at" type="date" value="${existing?.started_at ? existing.started_at.slice(0,10) : ''}">
+                    </div>
+                    <div class="form-row">
+                        <label>Ended at <span class="hint">(leave empty for present)</span></label>
+                        <input name="ended_at" type="date" value="${existing?.ended_at ? existing.ended_at.slice(0,10) : ''}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label>Summary</label>
+                    <textarea name="summary" rows="3">${escapeHtml(existing?.summary || '')}</textarea>
+                </div>
+                <div class="form-row">
+                    <label>Highlights <span class="hint">one per line</span></label>
+                    <textarea name="highlights_raw" rows="5">${escapeHtml((existing?.highlights || []).join('\n'))}</textarea>
+                </div>
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label>Sort order</label>
+                        <input name="sort_order" type="number" value="${existing?.sort_order ?? 0}">
+                    </div>
+                    <div class="form-row" style="padding-top:1.6rem;">
+                        <label class="checkbox">
+                            <input type="checkbox" name="is_published" ${existing?.is_published !== false ? 'checked' : ''}> Published
+                        </label>
+                    </div>
+                </div>
+            `;
+
+            const m = UI.modal({
+                title: id ? 'Edit experience' : 'New experience',
+                size: 'lg',
+                body: form,
+                footer: [
+                    { label: 'Cancel', variant: 'ghost', close: true },
+                    { label: id ? 'Save' : 'Create', variant: 'primary', onClick: async () => {
+                        const data = UI.formToObject(form);
+                        const raw = data.highlights_raw || ''; delete data.highlights_raw;
+                        data.highlights = raw.split('\n').map(s => s.trim()).filter(Boolean);
+                        data.is_published = form.is_published.checked;
+                        ['started_at','ended_at'].forEach(k => { if (!data[k]) delete data[k]; });
+                        if (data.sort_order === '') delete data.sort_order; else data.sort_order = parseInt(data.sort_order, 10);
+                        try {
+                            if (id) await AdminAPI.experiences.update(id, data);
+                            else    await AdminAPI.experiences.create(data);
+                            UI.toast(id ? 'Updated' : 'Created', 'success');
+                            load();
+                            return true;
+                        } catch (e) {
+                            if (e.validation) UI.applyValidationErrors(form, e.validation);
+                            UI.toast(e.message, 'error');
+                            return false;
+                        }
+                    } },
+                ],
+            });
+            m.open();
+        }
+    </script>
+</body>
+</html>
