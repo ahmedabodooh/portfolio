@@ -1047,29 +1047,29 @@ html.dark .stat-desc { color: rgba(255,255,255,.72); }
     gap: .4rem;
     white-space: nowrap;
 }
+.hero-cta .cta-sm { display: none; }
+.hero-cta .cta-lg { display: inline; }
 
 @media (max-width: 640px) {
     .hero-ctas {
-        gap: .5rem;
+        gap: .45rem;
         flex-wrap: nowrap;
-        justify-content: space-between;
     }
     .hero-cta {
         flex: 1 1 0;
         min-width: 0;
-        padding: .6rem .65rem;
-        font-size: .72rem;
+        padding: .55rem .5rem;
+        font-size: .78rem;
         gap: .3rem;
     }
     .hero-cta svg {
-        width: .8rem !important;
-        height: .8rem !important;
+        width: .85rem !important;
+        height: .85rem !important;
         flex-shrink: 0;
     }
-    .hero-cta span {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
+    /* Swap long labels for short ones on phones so text never truncates. */
+    .hero-cta .cta-lg { display: none; }
+    .hero-cta .cta-sm { display: inline; }
 }
 
 /* ============================================================
