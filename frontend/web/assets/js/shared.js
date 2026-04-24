@@ -214,18 +214,21 @@
     }
 
     /* ---------- Background music ---------- */
-    // window.initMusic(url) — called from main.js once profile data loads.
-    // Falsy url → keep the toggle button hidden (no music configured).
-    // Policy: every fresh page load attempts to play. Pressing pause only
-    // stops it for this session; re-opening / refreshing starts it again.
-    const MUSIC_URL_CACHE = 'ahmed-music-url';
-    // Hydrate from localStorage so repeat visitors can autoplay the instant
-    // shared.js parses — no need to wait on the /site/profile API call.
+    // Plays one continuous track across pages in the same tab.
+    //   - First entry: attempts autoplay (or starts on first user gesture).
+    //   - Navigating between pages: resumes at the same position, same state.
+    //   - User presses pause: stays paused across pages in this tab.
+    //   - New tab / new browser session: starts fresh from the beginning.
+    const MUSIC_URL_CACHE    = 'ahmed-music-url';        // localStorage (cross-session cache)
+    const MUSIC_POSITION_KEY = 'ahmed-music-position';   // sessionStorage (per tab)
+    const MUSIC_PAUSED_KEY   = 'ahmed-music-paused';     // sessionStorage (per tab)
+
     let currentMusicUrl = localStorage.getItem(MUSIC_URL_CACHE) || null;
     // Clean up the legacy persistent-mute preference from earlier builds.
     localStorage.removeItem('ahmed-music-muted');
-    // Tracks the user's manual pause within this tab/session only.
-    let userPausedThisSession = false;
+    // Did the user explicitly press pause anywhere in this tab's history?
+    let userPausedThisSession = sessionStorage.getItem(MUSIC_PAUSED_KEY) === '1';
+
     window.initMusic = function (url) {
         if (url !== undefined) {
             currentMusicUrl = url || null;
@@ -260,21 +263,45 @@
             toggle.title = playing ? 'Pause music' : 'Play music';
         };
 
+        // Restore playback position from the previous page (same tab)
+        const savedTime = parseFloat(sessionStorage.getItem(MUSIC_POSITION_KEY) || '0');
+        const seekToSaved = () => {
+            if (!isFinite(audio.duration) || savedTime <= 0) return;
+            if (savedTime < audio.duration) {
+                try { audio.currentTime = savedTime; } catch (e) { /* ignore */ }
+            }
+        };
+        if (audio.readyState >= 1) seekToSaved();
+        else audio.addEventListener('loadedmetadata', seekToSaved, { once: true });
+
+        // Persist position + state periodically + on navigation so the next
+        // page can resume seamlessly. sessionStorage clears when the tab closes.
+        const persistState = () => {
+            if (!audio.paused) {
+                sessionStorage.setItem(MUSIC_POSITION_KEY, String(audio.currentTime || 0));
+            }
+            sessionStorage.setItem(MUSIC_PAUSED_KEY, userPausedThisSession ? '1' : '0');
+        };
+        if (!window.__musicPersistWired) {
+            window.__musicPersistWired = true;
+            window.addEventListener('pagehide', persistState);
+            window.addEventListener('beforeunload', persistState);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') persistState();
+            });
+            setInterval(persistState, 3000);
+        }
+
         const tryPlay = () => audio.play().then(syncButton).catch(() => syncButton());
         if (!userPausedThisSession) {
-            // Try to autoplay — most browsers block this without user interaction.
             tryPlay();
             // Fallback: resume on the first meaningful user gesture that is NOT
-            // the music toggle itself (the toggle has its own click handler).
+            // the music toggle itself.
             const KICK_EVENTS = ['click', 'keydown', 'touchstart', 'pointerdown', 'scroll'];
             const removeKick = () => KICK_EVENTS.forEach((ev) =>
                 document.removeEventListener(ev, kick, true)
             );
             const kick = (e) => {
-                // Ignore events that originate from the music toggle — otherwise
-                // the first tap there would race with the toggle's own handler
-                // (capture fires first and sets audio playing; then bubble
-                // handler flips it back to paused, canceling the user out).
                 if (e && e.target && e.target.closest && e.target.closest('[data-music-toggle]')) return;
                 removeKick();
                 if (audio.paused && !userPausedThisSession) tryPlay();
@@ -290,9 +317,11 @@
         toggle.addEventListener('click', () => {
             if (audio.paused) {
                 userPausedThisSession = false;
+                sessionStorage.setItem(MUSIC_PAUSED_KEY, '0');
                 tryPlay();
             } else {
                 userPausedThisSession = true;
+                sessionStorage.setItem(MUSIC_PAUSED_KEY, '1');
                 audio.pause();
                 syncButton();
             }
